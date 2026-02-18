@@ -1,0 +1,11 @@
+{
+  "name": "healthhub-simulate",
+  "version": "1.0.0",
+  "description": "Standalone simulator — runs without Docker",
+  "scripts": {
+    "simulate": "node simulate.js"
+  },
+  "dependencies": {
+    "mqtt": "^5.3.4"
+  }
+}

@@ -1,0 +1,111 @@
+version: "3.9"
+
+services:
+  # ─── MQTT Message Broker (Mosquitto) ─────────────────────────────────────────
+  mqtt-broker:
+    image: eclipse-mosquitto:2.0
+    container_name: healthhub-mqtt
+    ports:
+      - "1883:1883"
+      - "9001:9001"
+    volumes:
+      - ./mosquitto/config/mosquitto.conf:/mosquitto/config/mosquitto.conf
+      - mosquitto-data:/mosquitto/data
+      - mosquitto-log:/mosquitto/log
+    networks:
+      - healthhub-net
+    restart: unless-stopped
+
+  # ─── Depot Agent: Mo Chit Depot ─────────────────────────────────────────────
+  # Fleet: EMU-A1 (1-35, Siemens Mobility) + EMU-B1 (36-47, CNR) + EMU-B2 (48-52, CNR) = 52 trains
+  depot-mochit:
+    build:
+      context: ./depot-agent
+      dockerfile: Dockerfile
+    container_name: depot-mochit
+    environment:
+      - DEPOT_ID=MOC
+      - MQTT_BROKER=mqtt://mqtt-broker:1883
+      - PUBLISH_INTERVAL=3000
+    depends_on:
+      - mqtt-broker
+    networks:
+      - healthhub-net
+    restart: unless-stopped
+
+  # ─── Depot Agent: Khukhot Depot ──────────────────────────────────────────────
+  # Fleet: EMU-A2 (53-74, Siemens-Bozankaya) = 22 trains
+  depot-khukhot:
+    build:
+      context: ./depot-agent
+      dockerfile: Dockerfile
+    container_name: depot-khukhot
+    environment:
+      - DEPOT_ID=KHU
+      - MQTT_BROKER=mqtt://mqtt-broker:1883
+      - PUBLISH_INTERVAL=3000
+    depends_on:
+      - mqtt-broker
+    networks:
+      - healthhub-net
+    restart: unless-stopped
+
+  # ─── Depot Agent: Kheha Depot ────────────────────────────────────────────────
+  # Fleet: EMU-B3 (75-98, CRRC) = 24 trains
+  depot-kheha:
+    build:
+      context: ./depot-agent
+      dockerfile: Dockerfile
+    container_name: depot-kheha
+    environment:
+      - DEPOT_ID=KHA
+      - MQTT_BROKER=mqtt://mqtt-broker:1883
+      - PUBLISH_INTERVAL=3000
+    depends_on:
+      - mqtt-broker
+    networks:
+      - healthhub-net
+    restart: unless-stopped
+
+  # ─── Backend API + WebSocket Server ──────────────────────────────────────────
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: healthhub-backend
+    ports:
+      - "3001:3001"
+    environment:
+      - PORT=3001
+      - MQTT_BROKER=mqtt://mqtt-broker:1883
+      - NODE_ENV=production
+    depends_on:
+      - mqtt-broker
+    networks:
+      - healthhub-net
+    restart: unless-stopped
+
+  # ─── Frontend Dashboard ───────────────────────────────────────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        - VITE_BACKEND_URL=http://localhost:3001
+        - VITE_WS_URL=http://localhost:3001
+    container_name: healthhub-frontend
+    ports:
+      - "8080:80"
+    depends_on:
+      - backend
+    networks:
+      - healthhub-net
+    restart: unless-stopped
+
+volumes:
+  mosquitto-data:
+  mosquitto-log:
+
+networks:
+  healthhub-net:
+    driver: bridge
