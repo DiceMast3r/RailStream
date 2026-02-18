@@ -3,7 +3,7 @@
  * Column panel representing one depot with its full train list.
  */
 import React, { useState } from "react";
-import { Building2, Train, ChevronDown, ChevronUp } from "lucide-react";
+import { Building2, Train, ChevronDown, ChevronUp, Radio } from "lucide-react";
 import TrainCard from "./TrainCard";
 
 const DEPOT_ACCENT = {
@@ -18,7 +18,7 @@ const DEPOT_HEADER = {
   KHA: "text-emerald-400",
 };
 
-export default function DepotPanel({ depotId, depotInfo, trains }) {
+export default function DepotPanel({ depotId, depotInfo, trains, pointMachines = [] }) {
   const [collapsed, setCollapsed] = useState(false);
   const faultCount = trains.filter((t) => (t.alerts || []).length > 0).length;
   const inService  = trains.filter((t) => t.status === "IN_SERVICE").length;
@@ -63,6 +63,36 @@ export default function DepotPanel({ depotId, depotInfo, trains }) {
           {collapsed ? <ChevronDown size={14} /> : <ChevronUp size={14} />}
         </span>
       </div>
+
+      {/* ── Point machines ── */}
+      {pointMachines.length > 0 && (
+        <div className="px-3 pb-2">
+          <p className="text-[9px] font-extrabold tracking-widest text-gray-600 uppercase mb-1">Point Machines</p>
+          <div className="grid grid-cols-2 gap-1">
+            {pointMachines
+              .sort((a, b) => a.localId.localeCompare(b.localId))
+              .map((pm) => {
+                const color = pm.state === "FAULT"   ? "text-red-400   border-red-500/30   bg-red-950/20"
+                            : pm.state === "WARNING" ? "text-amber-400 border-amber-500/30 bg-amber-950/20"
+                            :                         "text-emerald-400 border-emerald-500/20 bg-emerald-950/10";
+                return (
+                  <div key={pm.pmId} className={`rounded-lg border px-2 py-1 text-[10px] ${color}`}>
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold font-mono">{pm.localId}</span>
+                      <span className="font-semibold">{pm.state}</span>
+                    </div>
+                    <div className="text-gray-500 font-mono mt-0.5 leading-tight">
+                      {pm.strokeTime}ms · {pm.motorCurrent}A · {pm.voltage}V
+                    </div>
+                    <div className="text-gray-600 font-mono leading-tight">
+                      {pm.position} · #{pm.opCount}
+                    </div>
+                  </div>
+                );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* ── Train list ── */}
       {!collapsed && (

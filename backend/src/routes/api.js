@@ -40,6 +40,14 @@ router.get("/alerts", (req, res) => {
   res.json(store.getAlertLog(limit));
 });
 
+// GET /api/pointmachines  — all point machines (optionally filtered by depot)
+router.get("/pointmachines", (req, res) => {
+  const { depot } = req.query;
+  let pms = store.getAllPointMachines();
+  if (depot) pms = pms.filter((pm) => pm.depotId === depot.toUpperCase());
+  res.json(pms);
+});
+
 // GET /api/health  — service health check
 router.get("/health", (req, res) => {
   res.json({ status: "ok", uptime: process.uptime(), ts: new Date().toISOString() });

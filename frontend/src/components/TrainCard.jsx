@@ -6,7 +6,7 @@
 import React, { useState } from "react";
 import {
   Train, Gauge, Thermometer, Battery, Wind,
-  Activity, Radio, Camera, AlertTriangle, ChevronDown, ChevronUp,
+  Activity, Camera, AlertTriangle, ChevronDown, ChevronUp,
 } from "lucide-react";
 import StatusBadge from "./StatusBadge";
 import HealthBar   from "./HealthBar";
@@ -17,11 +17,10 @@ const COMPONENT_ICONS = {
   doors:      <Train   size={12} />,
   brakes:     <Gauge   size={12} />,
   hvac:       <Wind    size={12} />,
-  powerRail: <Activity size={12} />,
+  powerRail:  <Activity size={12} />,
   traction:   <Activity size={12} />,
   battery:    <Battery size={12} />,
   cctv:       <Camera  size={12} />,
-  signalling: <Radio   size={12} />,
 };
 
 function stateColor(state) {
@@ -35,7 +34,7 @@ function stateColor(state) {
 export default function TrainCard({ train }) {
   const [expanded, setExpanded] = useState(false);
 
-  const { trainId, series, manufacturer, status, speed, currentStation,
+  const { trainId, series, manufacturer, status, speed, phase, currentStation, nextStation,
           healthScore, components, alerts, odometer } = train;
   const hasAlerts = alerts && alerts.length > 0;
 
@@ -61,10 +60,17 @@ export default function TrainCard({ train }) {
         {/* Status */}
         <StatusBadge status={status} small />
 
-        {/* Speed */}
+        {/* Speed + phase */}
         <div className="flex items-center gap-1 text-xs text-gray-400 ml-auto">
           <Gauge size={11} />
           <span>{speed} km/h</span>
+          {phase && phase !== "DWELL" && (
+            <span className={`text-[9px] font-semibold ml-0.5 ${
+              phase === "ACCEL"  ? "text-emerald-400" :
+              phase === "CRUISE" ? "text-sky-400" :
+              phase === "BRAKE"  ? "text-amber-400" : "text-gray-500"
+            }`}>{phase}</span>
+          )}
         </div>
 
         {/* Alerts badge */}
@@ -85,7 +91,10 @@ export default function TrainCard({ train }) {
       <div className="px-3 pb-2 space-y-1">
         <HealthBar score={healthScore} />
         <p className="text-[11px] text-gray-500 truncate">
-          📍 {currentStation} &nbsp;|&nbsp; {odometer?.toLocaleString()} km
+          {nextStation
+            ? <>📍 {currentStation} <span className="text-gray-600">→</span> <span className="text-gray-400">{nextStation}</span></>
+            : <>📍 {currentStation}</>}
+          &nbsp;|&nbsp; {odometer?.toLocaleString()} km
         </p>
         {manufacturer && (
           <p className="text-[10px] text-gray-600 truncate">⚙️ {manufacturer}</p>
@@ -96,17 +105,29 @@ export default function TrainCard({ train }) {
       {expanded && (
         <div className="border-t border-gray-700/50 px-3 py-2 space-y-2">
           {/* Component grid */}
-          <div className="grid grid-cols-4 gap-1">
+          <div className="grid grid-cols-2 gap-1">
             {Object.entries(components || {}).map(([name, comp]) => (
               <div key={name}
-                className="flex flex-col items-center gap-0.5 py-1 px-0.5 rounded bg-gray-900/50">
-                <span className={stateColor(comp.state)}>
+                className="flex items-center gap-2 py-1 px-2 rounded bg-gray-900/50">
+                {/* Icon + name */}
+                <span className={`shrink-0 ${stateColor(comp.state)}`}>
                   {COMPONENT_ICONS[name] || <Activity size={12} />}
                 </span>
-                <span className="text-[9px] text-gray-500 capitalize">{name}</span>
-                <span className={`text-[9px] font-semibold ${stateColor(comp.state)}`}>
-                  {comp.state}
-                </span>
+                <div className="flex flex-col min-w-0 flex-1">
+                  <div className="flex items-center justify-between gap-1">
+                    <span className="text-[9px] text-gray-400 capitalize leading-tight">{name}</span>
+                    <span className={`text-[9px] font-bold leading-tight ${stateColor(comp.state)}`}>{comp.state}</span>
+                  </div>
+                  {/* Per-component telemetry sub-row */}
+                  <span className="text-[8px] text-gray-500 font-mono leading-tight truncate">
+                    {name === "brakes"     && comp.pressure   != null && `${comp.pressure}%`}
+                    {name === "hvac"       && comp.cabinTemp  != null && `${comp.cabinTemp}°C`}
+                    {name === "traction"   && comp.motorTemp  != null && `${comp.motorTemp}°C`}
+                    {name === "battery"    && comp.voltage    != null && `${comp.voltage} V`}
+                    {name === "cctv"       && comp.activeCams != null && `${comp.activeCams}/24 cams`}
+                    {name === "doors"      && comp.faultCars?.length  > 0 && `Car ${comp.faultCars.join(",")}`}
+                  </span>
+                </div>
               </div>
             ))}
           </div>

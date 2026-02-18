@@ -68,7 +68,6 @@ function initTrainState(trainId, line) {
       traction:   { state: "NORMAL", motorTemp: 50 },
       battery:    { state: "NORMAL", voltage: 77.5 },
       cctv:       { state: "NORMAL", activeCams: 24 },
-      signalling: { state: "NORMAL" },
     },
     alerts: [],
     line,
@@ -96,7 +95,7 @@ function updateTrain(trainId) {
   // --- Speed based on status ---
   switch (s.status) {
     case "IN_SERVICE":
-      s.speed = clamp(s.speed + rand(-5, 8), 0, 90);
+      s.speed = clamp(s.speed + rand(-5, 8), 0, 80);
       break;
     case "STANDBY":
       s.speed = clamp(s.speed + rand(-3, 0), 0, 15);
@@ -203,12 +202,6 @@ function updateTrain(trainId) {
     alerts.push({ code: "CCTV_PARTIAL", severity: "LOW", message: `${24 - c.cctv.activeCams} camera(s) offline` });
   }
 
-  // Signalling
-  c.signalling.state = evolveComponentState(c.signalling.state);
-  if (c.signalling.state === "FAULT") {
-    alerts.push({ code: "ATP_FAULT", severity: "CRITICAL", message: "ATP/ATO signalling fault" });
-  }
-
   // --- Maintenance Alert ---
   const kmSinceMaint = s.odometer - s.lastMaintenanceKm;
   if (kmSinceMaint > 40000) {
@@ -273,10 +266,91 @@ function getTelemetry(trainId, depotId, depotName, line, series = "", manufactur
       traction:   { ...s.components.traction },
       battery:    { ...s.components.battery },
       cctv:       { ...s.components.cctv },
-      signalling: { ...s.components.signalling },
     },
     alerts: [...s.alerts],
   };
 }
 
-module.exports = { getTelemetry };
+// ─── Point Machine Simulator (wayside, per-depot) ────────────────────────────
+// Point machines are fixed trackside equipment. Each depot has a named set.
+// Their telemetry is published independently of any train.
+
+const PM_STATE = { NORMAL: 0.90, WARNING: 0.07, FAULT: 0.03 };
+const pmStates = {};
+
+const DEPOT_POINT_MACHINES = {
+  MOC: ["A1","A2","A3","B1","B2","C1","C2","D1"],
+  KHU: ["A1","A2","B1","B2","C1"],
+  KHA: ["A1","A2","B1","B2","C1","C2"],
+};
+
+function initPMState(pmId) {
+  pmStates[pmId] = {
+    state:        "NORMAL",
+    motorCurrent: rand(2.0, 2.8),
+    voltage:      randInt(109, 113),
+    strokeTime:   randInt(3100, 3400),
+    position:     Math.random() > 0.5 ? "NORMAL" : "REVERSE",
+    opCount:      randInt(0, 200),
+  };
+}
+
+function getPointMachineTelemetry(depotId) {
+  const ids = DEPOT_POINT_MACHINES[depotId] || [];
+  return ids.map((localId) => {
+    const pmId = `${depotId}-PM-${localId}`;
+    if (!pmStates[pmId]) initPMState(pmId);
+    const p = pmStates[pmId];
+
+    // Evolve state
+    if (Math.random() >= 0.95) p.state = weightedPick(PM_STATE);
+    p.opCount += randInt(0, 2);
+
+    let alertCode = null;
+    if (p.state === "FAULT") {
+      p.motorCurrent = clamp(p.motorCurrent + rand(0.5, 2.0), 6.0, 12.0);
+      p.voltage      = clamp(p.voltage      + rand(-8, -2),   85, 110);
+      p.strokeTime   = clamp(p.strokeTime   + rand(500, 2000), 3000, 12000);
+      p.position     = "INTERMEDIATE";
+      alertCode      = "POINT_FAULT";
+    } else if (p.state === "WARNING") {
+      p.motorCurrent = clamp(p.motorCurrent + rand(0.1, 0.5), 2.0, 6.0);
+      p.voltage      = clamp(p.voltage      + rand(-3, 1),    100, 115);
+      p.strokeTime   = clamp(p.strokeTime   + rand(200, 800), 3000, 6500);
+      p.position     = Math.random() > 0.5 ? "NORMAL" : "REVERSE";
+      alertCode      = "POINT_SLOW";
+    } else {
+      p.motorCurrent = clamp(p.motorCurrent + rand(-0.2, 0.2), 1.8, 3.0);
+      p.voltage      = clamp(p.voltage      + rand(-1, 1),     108, 115);
+      p.strokeTime   = clamp(p.strokeTime   + rand(-100, 100), 3000, 3500);
+      p.position     = Math.random() > 0.5 ? "NORMAL" : "REVERSE";
+    }
+    p.motorCurrent = Math.round(p.motorCurrent * 10) / 10;
+    p.voltage      = Math.round(p.voltage);
+    p.strokeTime   = Math.round(p.strokeTime);
+
+    const alert = alertCode ? {
+      code:     alertCode,
+      severity: alertCode === "POINT_FAULT" ? "CRITICAL" : "HIGH",
+      message:  alertCode === "POINT_FAULT"
+        ? `PM ${localId}: stuck throw (${p.strokeTime} ms, ${p.motorCurrent} A)`
+        : `PM ${localId}: slow operation (${p.strokeTime} ms)`,
+    } : null;
+
+    return {
+      pmId,
+      localId,
+      depotId,
+      state:        p.state,
+      motorCurrent: p.motorCurrent,
+      voltage:      p.voltage,
+      strokeTime:   p.strokeTime,
+      position:     p.position,
+      opCount:      p.opCount,
+      alert,
+      timestamp:    new Date().toISOString(),
+    };
+  });
+}
+
+module.exports = { getTelemetry, getPointMachineTelemetry };

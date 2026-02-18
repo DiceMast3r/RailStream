@@ -14,6 +14,7 @@ export function useSocket() {
   const [connected, setConnected]   = useState(false);
   const [trains,    setTrains]       = useState({});   // trainId → payload
   const [depots,    setDepots]       = useState({});   // depotId → payload
+  const [pointMachines, setPointMachines] = useState({}); // pmId → payload
   const [summary,   setSummary]      = useState(null);
   const [alerts,    setAlerts]       = useState([]);   // rolling alert log
 
@@ -32,7 +33,7 @@ export function useSocket() {
     socket.on("disconnect", () => setConnected(false));
 
     // Initial full snapshot
-    socket.on("snapshot", ({ trains: ts, depots: ds, summary: s, alerts: a }) => {
+    socket.on("snapshot", ({ trains: ts, depots: ds, pointMachines: pms, summary: s, alerts: a }) => {
       const trainMap = {};
       for (const t of ts) trainMap[t.trainId] = t;
       setTrains(trainMap);
@@ -40,6 +41,10 @@ export function useSocket() {
       const depotMap = {};
       for (const d of ds) depotMap[d.depotId] = d;
       setDepots(depotMap);
+
+      const pmMap = {};
+      for (const pm of (pms || [])) pmMap[pm.pmId] = pm;
+      setPointMachines(pmMap);
 
       setSummary(s);
       setAlerts(a || []);
@@ -58,6 +63,11 @@ export function useSocket() {
     // KPI summary refresh
     socket.on("summary:update", (s) => setSummary(s));
 
+    // Live point machine telemetry
+    socket.on("pm:update", (payload) => {
+      setPointMachines((prev) => ({ ...prev, [payload.pmId]: payload }));
+    });
+
     // Critical alert broadcast
     socket.on("alert:critical", (payload) => {
       addAlerts(
@@ -74,5 +84,5 @@ export function useSocket() {
     return () => socket.disconnect();
   }, [addAlerts]);
 
-  return { connected, trains, depots, summary, alerts };
+  return { connected, trains, depots, pointMachines, summary, alerts };
 }

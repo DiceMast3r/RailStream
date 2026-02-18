@@ -24,7 +24,7 @@ const DEPOT_ORDER = ["MOC", "KHU", "KHA"];
 const ALLOWED_DEPOTS = new Set(DEPOT_ORDER);
 
 export default function App() {
-  const { connected, trains, depots, summary, alerts } = useSocket();
+  const { connected, trains, depots, pointMachines, summary, alerts } = useSocket();
   const [selectedAlert, setSelectedAlert] = useState(null);
 
   // Group trains by depotId
@@ -36,6 +36,16 @@ export default function App() {
     }
     return groups;
   }, [trains]);
+
+  // Group point machines by depotId
+  const pmsByDepot = useMemo(() => {
+    const groups = {};
+    for (const pm of Object.values(pointMachines)) {
+      if (!groups[pm.depotId]) groups[pm.depotId] = [];
+      groups[pm.depotId].push(pm);
+    }
+    return groups;
+  }, [pointMachines]);
 
   // All known depot IDs — restricted to the three real BTS depots
   const depotIds = useMemo(() => {
@@ -95,6 +105,7 @@ export default function App() {
                 depotId={depotId}
                 depotInfo={depots[depotId]}
                 trains={trainsByDepot[depotId] || []}
+                pointMachines={pmsByDepot[depotId] || []}
               />
             ))}
           </div>

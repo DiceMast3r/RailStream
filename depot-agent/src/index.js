@@ -12,7 +12,7 @@
 
 const mqtt = require("mqtt");
 const { buildFleetForDepot, DEPOT_INFO } = require("./trainData");
-const { getTelemetry }                   = require("./trainSimulator");
+const { getTelemetry, getPointMachineTelemetry } = require("./trainSimulator");
 
 // ─── Config ───────────────────────────────────────────────────────────────────
 
@@ -30,7 +30,8 @@ const trainIds     = fleetEntries.map((t) => t.trainId);
 const fleetMeta    = Object.fromEntries(fleetEntries.map((t) => [t.trainId, t]));
 
 // MQTT topic pattern: healthhub/depot/{depotId}/train/{trainId}
-const topicFor = (trainId) => `healthhub/depot/${DEPOT_ID}/train/${trainId}`;
+const topicFor   = (trainId) => `healthhub/depot/${DEPOT_ID}/train/${trainId}`;
+const pmTopicFor = (pmId)    => `healthhub/depot/${DEPOT_ID}/pointmachine/${pmId}`;
 const depotStatusTopic = `healthhub/depot/${DEPOT_ID}/status`;
 
 // ─── Connect ──────────────────────────────────────────────────────────────────
@@ -96,9 +97,11 @@ client.on("offline", () => {
 // ─── Publishing Loop ──────────────────────────────────────────────────────────
 
 let trainIndex = 0; // publish one train per tick to spread network load
+let tickCount  = 0;
 
 function startPublishing() {
   setInterval(() => {
+    tickCount++;
     const meta    = fleetEntries[trainIndex % fleetEntries.length];
     trainIndex++;
 
@@ -119,6 +122,14 @@ function startPublishing() {
         );
       }
     });
+
+    // Publish all point machines every 3rd tick (~9 s at default interval)
+    if (tickCount % 3 === 0) {
+      const pms = getPointMachineTelemetry(DEPOT_ID);
+      for (const pm of pms) {
+        client.publish(pmTopicFor(pm.pmId), JSON.stringify(pm), { qos: 1 });
+      }
+    }
   }, PUBLISH_INTERVAL);
 }
 

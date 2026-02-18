@@ -10,6 +10,9 @@ const trains = new Map();
 /** @type { Map<string, object> }  depotId → depot registration */
 const depots = new Map();
 
+/** @type { Map<string, object> }  pmId → latest point machine payload */
+const pointMachines = new Map();
+
 /** @type { Array<{ timestamp, trainId, depotId, alerts }> } rolling alert log */
 const alertLog = [];
 const MAX_ALERT_LOG = 200;
@@ -47,6 +50,20 @@ function getTrainsByDepot(depotId) {
 
 function getTrain(trainId) {
   return trains.get(trainId) || null;
+}
+
+// ─── Point machine ops ───────────────────────────────────────────────────────────
+
+function upsertPointMachine(payload) {
+  pointMachines.set(payload.pmId, payload);
+}
+
+function getAllPointMachines() {
+  return Array.from(pointMachines.values());
+}
+
+function getPointMachinesByDepot(depotId) {
+  return getAllPointMachines().filter((pm) => pm.depotId === depotId);
 }
 
 // ─── Depot ops ────────────────────────────────────────────────────────────────
@@ -97,6 +114,9 @@ module.exports = {
   getAllTrains,
   getTrainsByDepot,
   getTrain,
+  upsertPointMachine,
+  getAllPointMachines,
+  getPointMachinesByDepot,
   upsertDepot,
   getAllDepots,
   getAlertLog,

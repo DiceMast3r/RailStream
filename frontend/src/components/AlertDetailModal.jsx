@@ -7,7 +7,7 @@ import React, { useEffect } from "react";
 import {
   X, AlertTriangle, Train, Building2, MapPin,
   Clock, Activity, Gauge, Thermometer, Battery,
-  Wind, Camera, Radio, ChevronRight,
+  Wind, Camera, ChevronRight,
 } from "lucide-react";
 import StatusBadge from "./StatusBadge";
 
@@ -40,11 +40,10 @@ const COMP_ICONS = {
   doors:      <Activity size={14} />,
   brakes:     <Gauge    size={14} />,
   hvac:       <Wind     size={14} />,
-  powerRail: <Activity size={14} />,
+  powerRail:  <Activity size={14} />,
   traction:   <Activity size={14} />,
   battery:    <Battery  size={14} />,
   cctv:       <Camera   size={14} />,
-  signalling: <Radio    size={14} />,
 };
 
 function compStateColor(state) {
@@ -166,12 +165,21 @@ export default function AlertDetailModal({ alert, train, onClose }) {
                 {Object.entries(train.components).map(([name, comp]) => (
                   <div
                     key={name}
-                    className={`flex items-center gap-2 rounded-lg px-2.5 py-1.5 border text-xs ${compStateColor(comp.state)}`}
+                    className={`flex flex-col gap-1 rounded-lg px-2.5 py-1.5 border text-xs ${compStateColor(comp.state)}`}
                   >
-                    <span className="shrink-0">{COMP_ICONS[name] || <Activity size={14} />}</span>
-                    <span className="capitalize font-medium text-gray-300">{name}</span>
-                    <span className="ml-auto font-semibold">{comp.state}</span>
-                  </div>
+                    <div className="flex items-center gap-2">
+                      <span className="shrink-0">{COMP_ICONS[name] || <Activity size={14} />}</span>
+                      <span className="capitalize font-medium text-gray-300">{name}</span>
+                      <span className="ml-auto font-semibold">{comp.state}</span>
+                    </div>
+                    {name === "signalling" && comp.strokeTime != null && (
+                      <div className="flex flex-wrap gap-2 text-[10px] text-gray-400 pl-5">
+                        <span>Stroke: <span className={`font-semibold ${comp.strokeTime > 5000 ? "text-red-400" : comp.strokeTime > 4000 ? "text-amber-400" : "text-sky-400"}`}>{comp.strokeTime} ms</span></span>
+                        <span>Motor: <span className="font-semibold text-sky-400">{comp.motorCurrent} A</span></span>
+                        <span>V: <span className="font-semibold text-sky-400">{comp.voltage} V</span></span>
+                        <span>Pos: <span className={`font-semibold ${comp.position === "INTERMEDIATE" ? "text-red-400" : "text-emerald-400"}`}>{comp.position}</span></span>
+                      </div>
+                    )}                  </div>
                 ))}
               </div>
             </Section>
@@ -253,6 +261,8 @@ function RecommendedAction({ code, severity }) {
   const ACTIONS = {
     BRAKE_FAULT:          "Immediately withdraw train from service. Dispatch maintenance crew to inspect brake system. Do not allow passenger boarding.",
     POWER_FAULT:          "Halt train at nearest station. Inspect third rail shoe contact and power supply continuity. Require engineering sign-off before resuming.",
+    POINT_FAULT:          "Take point machine out of service immediately. Dispatch P-way team to inspect for obstruction, broken stretcher bar, or motor overload. Impose 15 km/h TSR over affected points pending repair.",
+    POINT_SLOW:           "Flag point machine for inspection at next maintenance window. Monitor stroke time trend. If stroke time exceeds 6 s, impose manual working procedures and notify P-way supervisor.",
     ATP_FAULT:            "Switch to manual driving mode. Notify signalling control room. Reduce speed to 25 km/h maximum pending investigation.",
     DOOR_FAULT:           "Stop at next station. Inspect faulty car doors. Cordon off affected car if unable to resolve. Notify passengers.",
     TRACTION_OVERHEAT:    "Reduce speed. Increase inter-station dwell time to allow cooling. If temperature exceeds 130°C, withdraw from service.",

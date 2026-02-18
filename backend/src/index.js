@@ -36,10 +36,11 @@ io.on("connection", (socket) => {
 
   // Send current snapshot so the dashboard is immediately populated
   socket.emit("snapshot", {
-    trains:  store.getAllTrains(),
-    depots:  store.getAllDepots(),
-    summary: store.getFleetSummary(),
-    alerts:  store.getAlertLog(50),
+    trains:        store.getAllTrains(),
+    depots:        store.getAllDepots(),
+    pointMachines: store.getAllPointMachines(),
+    summary:       store.getFleetSummary(),
+    alerts:        store.getAlertLog(50),
   });
 
   socket.on("disconnect", () => {

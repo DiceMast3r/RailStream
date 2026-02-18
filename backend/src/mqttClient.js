@@ -10,8 +10,9 @@ const store = require("./store");
 const BROKER_URL = process.env.MQTT_BROKER || "mqtt://localhost:1883";
 
 // Topic patterns
-const TRAIN_TOPIC  = "healthhub/depot/+/train/+";   // all train telemetry
-const DEPOT_TOPIC  = "healthhub/depot/+/status";     // depot registrations
+const TRAIN_TOPIC  = "healthhub/depot/+/train/+";        // all train telemetry
+const DEPOT_TOPIC  = "healthhub/depot/+/status";          // depot registrations
+const PM_TOPIC     = "healthhub/depot/+/pointmachine/+"; // point machine telemetry
 
 let io; // Socket.io server instance (injected)
 
@@ -26,7 +27,7 @@ function start(socketIoServer) {
 
   client.on("connect", () => {
     console.log("[MQTT] ✅ Connected to broker:", BROKER_URL);
-    client.subscribe([TRAIN_TOPIC, DEPOT_TOPIC], { qos: 1 }, (err) => {
+    client.subscribe([TRAIN_TOPIC, DEPOT_TOPIC, PM_TOPIC], { qos: 1 }, (err) => {
       if (err) console.error("[MQTT] Subscribe error:", err);
       else console.log("[MQTT] Subscribed to depot topics");
     });
@@ -45,6 +46,10 @@ function start(socketIoServer) {
       store.upsertDepot(payload);
       io.emit("depot:update", payload);
       console.log(`[MQTT] Depot registered: ${payload.depotId} (${payload.depotName})`);
+    } else if (topic.includes("/pointmachine/")) {
+      // Point machine telemetry
+      store.upsertPointMachine(payload);
+      io.emit("pm:update", payload);
     } else {
       // Train telemetry
       store.upsertTrain(payload);
