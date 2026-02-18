@@ -1,5 +1,5 @@
 /**
- * simulate.js  —  HealthHub Standalone Train Simulator
+ * simulate.js  —  RailStream Standalone Train Simulator
  *
  * Runs all 3 depots locally WITHOUT Docker.
  * Requires: npm install mqtt  (in this folder or globally)
@@ -289,7 +289,7 @@ for (const d of DEPOTS) {
 // ─── Connect & publish ────────────────────────────────────────────────────────
 
 console.log("\n╔══════════════════════════════════════════════╗");
-console.log("║   HealthHub — Standalone Train Simulator     ║");
+console.log("║   RailStream — Standalone Train Simulator    ║");
 console.log("╚══════════════════════════════════════════════╝");
 console.log(`Broker  : ${BROKER}`);
 const totalTrains = Object.values(fleets).reduce((a, f) => a + f.length, 0);
@@ -311,7 +311,7 @@ client.on("connect", () => {
   for (const d of DEPOTS) {
     const trainIds = fleets[d.id].map(t => t.trainId);
     client.publish(
-      `healthhub/depot/${d.id}/status`,
+      `railstream/depot/${d.id}/status`,
       JSON.stringify({ depotId:d.id, depotName:d.name, line:d.line,
         trainCount:fleets[d.id].length, trains:trainIds, fleet:fleets[d.id],
         agentVersion:"standalone", connectedAt:new Date().toISOString() }),
@@ -339,7 +339,7 @@ client.on("connect", () => {
         series:meta.series, manufacturer:meta.manufacturer,
       };
       client.publish(
-        `healthhub/depot/${d.id}/train/${meta.trainId}`,
+        `railstream/depot/${d.id}/train/${meta.trainId}`,
         JSON.stringify(payload), { qos:1 }
       );
 
@@ -355,7 +355,7 @@ client.on("connect", () => {
         const pms = tickPM(d.id);
         for(const pm of pms){
           client.publish(
-            `healthhub/depot/${d.id}/pointmachine/${pm.pmId}`,
+            `railstream/depot/${d.id}/pointmachine/${pm.pmId}`,
             JSON.stringify(pm), { qos:1 }
           );
         }

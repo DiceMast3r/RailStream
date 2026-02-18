@@ -1,5 +1,5 @@
 /**
- * index.js  —  HealthHub Backend
+ * index.js  —  RailStream Backend
  *
  * Bootstraps Express + Socket.io, then connects the MQTT subscriber.
  * All real-time train data flows: MQTT → store → Socket.io → browser.
@@ -60,7 +60,7 @@ setInterval(() => {
 // ─── Start server ─────────────────────────────────────────────────────────────
 
 httpServer.listen(PORT, () => {
-  console.log(`[API] ✅ HealthHub backend listening on port ${PORT}`);
+  console.log(`[API] ✅ RailStream backend listening on port ${PORT}`);
   console.log(`[API]    REST  → http://localhost:${PORT}/api`);
   console.log(`[API]    WS    → ws://localhost:${PORT}`);
 });

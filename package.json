@@ -1,5 +1,5 @@
 {
-  "name": "healthhub-simulate",
+  "name": "railstream-simulate",
   "version": "1.0.0",
   "description": "Standalone simulator — runs without Docker",
   "scripts": {

@@ -1,6 +1,6 @@
 /**
  * routes/api.js
- * REST API endpoints for the HealthHub dashboard.
+ * REST API endpoints for the RailStream dashboard.
  */
 
 const express = require("express");

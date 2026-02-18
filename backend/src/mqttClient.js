@@ -10,9 +10,9 @@ const store = require("./store");
 const BROKER_URL = process.env.MQTT_BROKER || "mqtt://localhost:1883";
 
 // Topic patterns
-const TRAIN_TOPIC  = "healthhub/depot/+/train/+";        // all train telemetry
-const DEPOT_TOPIC  = "healthhub/depot/+/status";          // depot registrations
-const PM_TOPIC     = "healthhub/depot/+/pointmachine/+"; // point machine telemetry
+const TRAIN_TOPIC  = "railstream/depot/+/train/+";        // all train telemetry
+const DEPOT_TOPIC  = "railstream/depot/+/status";          // depot registrations
+const PM_TOPIC     = "railstream/depot/+/pointmachine/+"; // point machine telemetry
 
 let io; // Socket.io server instance (injected)
 
@@ -20,7 +20,7 @@ function start(socketIoServer) {
   io = socketIoServer;
 
   const client = mqtt.connect(BROKER_URL, {
-    clientId: `healthhub-backend-${Date.now()}`,
+    clientId: `railstream-backend-${Date.now()}`,
     clean: true,
     reconnectPeriod: 5000,
   });

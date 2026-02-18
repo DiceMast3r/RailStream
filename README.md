@@ -1,4 +1,4 @@
-# HealthHub — BTS Skytrain Fleet Health Monitoring System
+# RailStream — BTS Skytrain Fleet Health Monitoring System
 
 > **Portfolio project** — Designed to demonstrate distributed systems, real-time IoT telemetry, and modern web architecture for the **Alstom Thailand Software Architect** position.
 
@@ -14,7 +14,7 @@ BTS Skytrain operates **3 depots** across Bangkok, managing a fleet of **98 trai
 | Khukhot Depot | `KHU` | Sukhumvit | EMU-A2 (Siemens-Bozankaya, 53–74) | 22 |
 | Kheha Depot | `KHA` | Sukhumvit | EMU-B3 (CRRC, 75–98) | 24 |
 
-Each depot continuously sends **train telemetry** to a central **Control Room** web dashboard. HealthHub simulates this entire pipeline using Docker containers.
+Each depot continuously sends **train telemetry** to a central **Control Room** web dashboard. RailStream simulates this entire pipeline using Docker containers.
 
 ---
 
@@ -28,15 +28,15 @@ Each depot continuously sends **train telemetry** to a central **Control Room** 
 │  │ Depot Agent │──┐                                             │
 │  │   (MOC)     │  │                                             │
 │  └─────────────┘  │   MQTT publish                             │
-│  ┌─────────────┐  ├──► ┌──────────────┐    WebSocket / REST    │
+│  ┌─────────────┐  ├──► ┌──────────────┐                       │
 │  │ Depot Agent │──┤    │ Mosquitto    │───► ┌──────────────┐   │
-│  │   (BEA)     │  │    │ MQTT Broker  │     │  Backend     │◄──┼── Browser
+│  │   (KHU)     │  │    │ MQTT Broker  │     │  Backend     │   │
 │  └─────────────┘  │    │ port 1883    │     │  Node.js     │   │
 │  ┌─────────────┐  │    └──────────────┘     │  port 3001   │   │
 │  │ Depot Agent │──┘                         └──────┬───────┘   │
-│  │   (WUT)     │                                   │           │
+│  │   (KHA)     │                                   │           │
 │  └─────────────┘                            ┌──────▼───────┐   │
-│                                             │  Frontend    │   │
+│                                             │  Frontend    ├───┼── Browser
 │                                             │  React/Nginx │   │
 │                                             │  port 8080   │   │
 │                                             └──────────────┘   │
@@ -53,11 +53,11 @@ Depot Agent  ──MQTT──►  Mosquitto  ──MQTT──►  Backend  ─�
 ### MQTT Topic Structure
 
 ```
-healthhub/depot/{DEPOT_ID}/status            # Depot registration (retained)
-healthhub/depot/{DEPOT_ID}/train/{TRAIN_ID}  # Train telemetry (QoS 1)
+railstream/depot/{DEPOT_ID}/status            # Depot registration (retained)
+railstream/depot/{DEPOT_ID}/train/{TRAIN_ID}  # Train telemetry (QoS 1)
 ```
 
-Example topic: `healthhub/depot/MOC/train/EMU-A1-001`
+Example topic: `railstream/depot/MOC/train/EMU-A1-001`
 
 ---
 
@@ -127,7 +127,7 @@ Each train publishes a JSON payload every 3 seconds:
 
 ```bash
 # Clone / open workspace
-cd e:\HealthHub
+cd e:\RailStream
 
 # Build and start all services
 docker compose up --build
@@ -215,7 +215,7 @@ curl http://localhost:3001/api/alerts?limit=10
 ## Project Structure
 
 ```
-HealthHub/
+RailStream/
 ├── docker-compose.yml          # Orchestrates all 5 services
 ├── simulate.js                 # Standalone simulator (no Docker needed)
 ├── package.json                # Root — simulator dependencies
@@ -274,7 +274,7 @@ HealthHub/
 
 ## Production Considerations
 
-For a production HealthHub deployment, the following enhancements would be added:
+For a production RailStream deployment, the following enhancements would be added:
 
 - **TimescaleDB** or **InfluxDB** for time-series telemetry storage
 - **Redis** for distributed train state cache

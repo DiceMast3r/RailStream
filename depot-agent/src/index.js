@@ -1,5 +1,5 @@
 /**
- * index.js  —  HealthHub Depot Agent
+ * index.js  —  RailStream Depot Agent
  *
  * Connects to the MQTT broker and publishes train telemetry for every
  * train in this depot on a fixed interval.
@@ -29,14 +29,14 @@ const fleetEntries = buildFleetForDepot(DEPOT_ID); // [{trainId, series, manufac
 const trainIds     = fleetEntries.map((t) => t.trainId);
 const fleetMeta    = Object.fromEntries(fleetEntries.map((t) => [t.trainId, t]));
 
-// MQTT topic pattern: healthhub/depot/{depotId}/train/{trainId}
-const topicFor   = (trainId) => `healthhub/depot/${DEPOT_ID}/train/${trainId}`;
-const pmTopicFor = (pmId)    => `healthhub/depot/${DEPOT_ID}/pointmachine/${pmId}`;
-const depotStatusTopic = `healthhub/depot/${DEPOT_ID}/status`;
+// MQTT topic pattern: railstream/depot/{depotId}/train/{trainId}
+const topicFor   = (trainId) => `railstream/depot/${DEPOT_ID}/train/${trainId}`;
+const pmTopicFor = (pmId)    => `railstream/depot/${DEPOT_ID}/pointmachine/${pmId}`;
+const depotStatusTopic = `railstream/depot/${DEPOT_ID}/status`;
 
 // ─── Connect ──────────────────────────────────────────────────────────────────
 
-console.log(`[${DEPOT_ID}] 🚇 HealthHub Depot Agent starting…`);
+console.log(`[${DEPOT_ID}] 🚇 RailStream Depot Agent starting…`);
 console.log(`[${DEPOT_ID}] Depot   : ${DEPOT_NAME} (${DEPOT_LINE} Line)`);
 console.log(`[${DEPOT_ID}] Fleet   : ${trainIds.length} trains`);
 console.log(`[${DEPOT_ID}] Broker  : ${BROKER_URL}`);

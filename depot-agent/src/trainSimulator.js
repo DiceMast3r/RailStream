@@ -52,14 +52,31 @@ const trainStates = {};
 
 function initTrainState(trainId, line) {
   const stations = getStationsForLine(line);
+  const stationIndex = randInt(0, stations.length - 1);
+  const status = weightedPick(STATUS_WEIGHTS);
+
+  // Spread trains across phases at startup so they don't all leave stations at once
+  const PHASES = ["DWELL", "ACCEL", "CRUISE", "BRAKE"];
+  const phase  = status === "IN_SERVICE" ? PHASES[randInt(0, 3)] : "DWELL";
+
   trainStates[trainId] = {
-    status: weightedPick(STATUS_WEIGHTS),
-    speed: 0,
-    currentStation: stations[randInt(0, stations.length - 1)],
-    stationIndex: randInt(0, stations.length - 1),
+    status,
+    speed: phase === "CRUISE" ? randInt(60, 80)
+         : phase === "ACCEL"  ? randInt(10, 50)
+         : phase === "BRAKE"  ? randInt(5, 40)
+         : 0,
+    currentStation: stations[stationIndex],
+    stationIndex,
     direction: Math.random() > 0.5 ? 1 : -1,
     odometer: randInt(50000, 500000), // km
     lastMaintenanceKm: randInt(0, 49999),
+
+    // ── Speed state-machine: DWELL → ACCEL → CRUISE → BRAKE → (repeat) ──
+    phase,
+    dwellTimer:  phase === "DWELL" ? randInt(8, 20) : 0,
+    // segProgress: fraction of inter-station segment completed (0–1)
+    segProgress: phase === "DWELL" ? 0 : rand(0.05, phase === "BRAKE" ? 0.95 : 0.6),
+
     components: {
       doors:      { state: "NORMAL", faultCars: [] },
       brakes:     { state: "NORMAL", pressure: 100 },
@@ -75,6 +92,60 @@ function initTrainState(trainId, line) {
   };
 }
 
+// ─── Speed State-Machine ─────────────────────────────────────────────────────
+//
+// Tick rate   : ~3 s  (PUBLISH_INTERVAL default)
+// segProgress : fraction of the ~1 km inter-station segment completed.
+//               distance per tick = speed(km/h) / 3600 * 3 s = speed / 1200
+// Acceleration: rand(6, 9)  km/h per tick  ≈ 0.6–0.8 m/s²
+// Deceleration: rand(9, 13) km/h per tick  ≈ 0.8–1.1 m/s²
+// Max speed   : 80 km/h
+// Dwell time  : 8–20 ticks ≈ 24–60 s at stations
+// Braking cue : triggered at segProgress ≥ 0.68 (same threshold as simulate.js)
+
+function updateTrainSpeed(s) {
+  const ACCEL_RATE = rand(6, 9);    // km/h per 3 s tick
+  const BRAKE_RATE = rand(9, 13);   // km/h per 3 s tick
+  const MAX_SPEED  = 80;
+
+  if (s.phase === "DWELL") {
+    s.speed = 0;
+    s.dwellTimer--;
+    if (s.dwellTimer <= 0) { s.phase = "ACCEL"; s.segProgress = 0; }
+
+  } else if (s.phase === "ACCEL") {
+    s.speed = clamp(s.speed + ACCEL_RATE, 0, MAX_SPEED);
+    s.segProgress += s.speed / 1200;
+    // Switch to cruise near top speed, or brake early on short segments
+    if (s.speed >= MAX_SPEED * 0.92)  s.phase = "CRUISE";
+    if (s.segProgress >= 0.68)        s.phase = "BRAKE";
+
+  } else if (s.phase === "CRUISE") {
+    s.speed = clamp(s.speed + rand(-2, 2), MAX_SPEED * 0.88, MAX_SPEED);
+    s.segProgress += s.speed / 1200;
+    if (s.segProgress >= 0.68) s.phase = "BRAKE";
+
+  } else if (s.phase === "BRAKE") {
+    s.speed = clamp(s.speed - BRAKE_RATE, 0, MAX_SPEED);
+    s.segProgress += Math.max(s.speed, 0) / 1200;
+    if (s.speed <= 0) {
+      // Arrived — advance to next station
+      s.stationIndex += s.direction;
+      if (s.stationIndex >= s.stations.length) {
+        s.stationIndex = s.stations.length - 2;
+        s.direction    = -1;
+      } else if (s.stationIndex < 0) {
+        s.stationIndex = 1;
+        s.direction    = 1;
+      }
+      s.currentStation = s.stations[s.stationIndex];
+      s.phase = "DWELL"; s.dwellTimer = randInt(8, 20); s.segProgress = 0;
+    }
+  }
+
+  s.speed = Math.round(s.speed * 10) / 10;
+}
+
 // ─── State Mutation Logic ──────────────────────────────────────────────────────
 
 function evolveComponentState(current) {
@@ -88,39 +159,32 @@ function updateTrain(trainId) {
   const alerts = [];
 
   // --- Operational Status ---
-  if (Math.random() < 0.05) {
+  if (Math.random() < 0.03) {
+    const prev = s.status;
     s.status = weightedPick(STATUS_WEIGHTS);
-  }
-
-  // --- Speed based on status ---
-  switch (s.status) {
-    case "IN_SERVICE":
-      s.speed = clamp(s.speed + rand(-5, 8), 0, 80);
-      break;
-    case "STANDBY":
-      s.speed = clamp(s.speed + rand(-3, 0), 0, 15);
-      break;
-    default:
-      s.speed = 0;
-  }
-  s.speed = Math.round(s.speed * 10) / 10;
-
-  // --- Station progression ---
-  if (s.status === "IN_SERVICE" && Math.random() < 0.3) {
-    s.stationIndex += s.direction;
-    if (s.stationIndex >= s.stations.length) {
-      s.stationIndex = s.stations.length - 2;
-      s.direction = -1;
-    } else if (s.stationIndex < 0) {
-      s.stationIndex = 1;
-      s.direction = 1;
+    // When transitioning into service, start fresh at a station
+    if (s.status === "IN_SERVICE" && prev !== "IN_SERVICE") {
+      s.phase = "DWELL"; s.dwellTimer = randInt(8, 20); s.segProgress = 0; s.speed = 0;
     }
-    s.currentStation = s.stations[s.stationIndex];
+    if (s.status !== "IN_SERVICE") { s.speed = 0; s.phase = "DWELL"; }
   }
 
-  // --- Odometer ---
+  // --- Speed & station progression ---
   if (s.status === "IN_SERVICE") {
-    s.odometer += Math.round(rand(0.1, 0.5) * 100) / 100;
+    updateTrainSpeed(s);
+  } else if (s.status === "STANDBY") {
+    s.speed = clamp(s.speed + rand(-3, 0), 0, 15);
+    s.speed = Math.round(s.speed * 10) / 10;
+    // Reset so train starts cleanly when it re-enters service
+    s.phase = "DWELL"; s.dwellTimer = randInt(8, 20); s.segProgress = 0;
+  } else {
+    s.speed = 0;
+    s.phase = "DWELL"; s.dwellTimer = randInt(8, 20); s.segProgress = 0;
+  }
+
+  // --- Odometer (speed km/h / 3600 * 3 s tick = km travelled) ---
+  if (s.speed > 0) {
+    s.odometer += Math.round(s.speed / 1200 * 100) / 100;
   }
 
   // --- Components ---
@@ -255,7 +319,11 @@ function getTelemetry(trainId, depotId, depotName, line, series = "", manufactur
     timestamp: new Date().toISOString(),
     status: s.status,
     speed: s.speed,
+    phase: s.phase,
     currentStation: s.currentStation,
+    nextStation: s.phase !== "DWELL"
+      ? s.stations[Math.max(0, Math.min(s.stations.length - 1, s.stationIndex + s.direction))]
+      : null,
     odometer: Math.round(s.odometer),
     healthScore,
     components: {

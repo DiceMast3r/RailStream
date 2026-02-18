@@ -1,7 +1,7 @@
 {
-  "name": "healthhub-depot-agent",
+  "name": "railstream-depot-agent",
   "version": "1.0.0",
-  "description": "HealthHub Depot Agent - Simulates train telemetry from a BTS depot",
+  "description": "RailStream Depot Agent - Simulates train telemetry from a BTS depot",
   "main": "src/index.js",
   "scripts": {
     "start": "node src/index.js"

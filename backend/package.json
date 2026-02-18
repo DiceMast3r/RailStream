@@ -1,7 +1,7 @@
 {
-  "name": "healthhub-backend",
+  "name": "railstream-backend",
   "version": "1.0.0",
-  "description": "HealthHub Backend — MQTT subscriber, REST API, WebSocket relay",
+  "description": "RailStream Backend — MQTT subscriber, REST API, WebSocket relay",
   "main": "src/index.js",
   "scripts": {
     "start": "node src/index.js",

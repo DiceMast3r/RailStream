@@ -1,10 +1,10 @@
-version: "3.9"
+name: railstream
 
 services:
   # ─── MQTT Message Broker (Mosquitto) ─────────────────────────────────────────
   mqtt-broker:
     image: eclipse-mosquitto:2.0
-    container_name: healthhub-mqtt
+    container_name: railstream-mqtt
     ports:
       - "1883:1883"
       - "9001:9001"
@@ -13,7 +13,7 @@ services:
       - mosquitto-data:/mosquitto/data
       - mosquitto-log:/mosquitto/log
     networks:
-      - healthhub-net
+      - railstream-net
     restart: unless-stopped
 
   # ─── Depot Agent: Mo Chit Depot ─────────────────────────────────────────────
@@ -30,7 +30,7 @@ services:
     depends_on:
       - mqtt-broker
     networks:
-      - healthhub-net
+      - railstream-net
     restart: unless-stopped
 
   # ─── Depot Agent: Khukhot Depot ──────────────────────────────────────────────
@@ -47,7 +47,7 @@ services:
     depends_on:
       - mqtt-broker
     networks:
-      - healthhub-net
+      - railstream-net
     restart: unless-stopped
 
   # ─── Depot Agent: Kheha Depot ────────────────────────────────────────────────
@@ -64,7 +64,7 @@ services:
     depends_on:
       - mqtt-broker
     networks:
-      - healthhub-net
+      - railstream-net
     restart: unless-stopped
 
   # ─── Backend API + WebSocket Server ──────────────────────────────────────────
@@ -72,7 +72,7 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    container_name: healthhub-backend
+    container_name: railstream-backend
     ports:
       - "3001:3001"
     environment:
@@ -82,7 +82,7 @@ services:
     depends_on:
       - mqtt-broker
     networks:
-      - healthhub-net
+      - railstream-net
     restart: unless-stopped
 
   # ─── Frontend Dashboard ───────────────────────────────────────────────────────
@@ -93,13 +93,13 @@ services:
       args:
         - VITE_BACKEND_URL=http://localhost:3001
         - VITE_WS_URL=http://localhost:3001
-    container_name: healthhub-frontend
+    container_name: railstream-frontend
     ports:
       - "8080:80"
     depends_on:
       - backend
     networks:
-      - healthhub-net
+      - railstream-net
     restart: unless-stopped
 
 volumes:
@@ -107,5 +107,5 @@ volumes:
   mosquitto-log:
 
 networks:
-  healthhub-net:
+  railstream-net:
     driver: bridge

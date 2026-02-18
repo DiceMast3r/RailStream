@@ -1,5 +1,5 @@
 /**
- * App.jsx  —  HealthHub Central Control Room Dashboard
+ * App.jsx  —  RailStream Central Control Room Dashboard
  *
  * Layout:
  *  ┌──────────────────────────────────────────────────┐
@@ -59,11 +59,11 @@ export default function App() {
         <div className="flex items-center gap-2">
           <Train size={22} className="text-sky-400" />
           <span className="font-extrabold text-lg tracking-tight text-white">
-            Health<span className="text-sky-400">Hub</span>
+            Rail<span className="text-sky-400">Stream</span>
           </span>
         </div>
         <span className="text-xs text-gray-500 font-medium">
-          BTS Skytrain Central Control Room
+          BTS Skytrain Fleet Monitoring System
         </span>
 
         <div className="ml-auto flex items-center gap-2 text-xs">
@@ -129,7 +129,7 @@ export default function App() {
 
       {/* Footer */}
       <footer className="text-center text-[11px] text-gray-700 py-2 border-t border-gray-800">
-        HealthHub v1.0 — Portfolio Demo — BTS Skytrain Fleet Monitoring
+        RailStream v1.0 — Portfolio Demo — BTS Skytrain Fleet Monitoring
       </footer>
 
       {/* ── Alert Detail Modal ── */}
