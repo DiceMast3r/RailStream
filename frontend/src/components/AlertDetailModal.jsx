@@ -40,7 +40,7 @@ const COMP_ICONS = {
   doors:      <Activity size={14} />,
   brakes:     <Gauge    size={14} />,
   hvac:       <Wind     size={14} />,
-  pantograph: <Activity size={14} />,
+  powerRail: <Activity size={14} />,
   traction:   <Activity size={14} />,
   battery:    <Battery  size={14} />,
   cctv:       <Camera   size={14} />,
@@ -252,7 +252,7 @@ function InfoRow({ icon, label, value, mono = false }) {
 function RecommendedAction({ code, severity }) {
   const ACTIONS = {
     BRAKE_FAULT:          "Immediately withdraw train from service. Dispatch maintenance crew to inspect brake system. Do not allow passenger boarding.",
-    PANTO_FAULT:          "Halt train at nearest station. Inspect pantograph contact strip and overhead line clearance. Require engineering sign-off before resuming.",
+    POWER_FAULT:          "Halt train at nearest station. Inspect third rail shoe contact and power supply continuity. Require engineering sign-off before resuming.",
     ATP_FAULT:            "Switch to manual driving mode. Notify signalling control room. Reduce speed to 25 km/h maximum pending investigation.",
     DOOR_FAULT:           "Stop at next station. Inspect faulty car doors. Cordon off affected car if unable to resolve. Notify passengers.",
     TRACTION_OVERHEAT:    "Reduce speed. Increase inter-station dwell time to allow cooling. If temperature exceeds 130°C, withdraw from service.",

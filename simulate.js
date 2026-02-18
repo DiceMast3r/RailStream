@@ -77,7 +77,7 @@ function initState(id, line){
     stIdx:randInt(0,stations.length-1), dir:1,
     odo:randInt(50000,500000), lastMaintKm:randInt(0,49999),
     c:{ doors:{s:"NORMAL",fc:[]}, brakes:{s:"NORMAL",p:100},
-        hvac:{s:"NORMAL",t:24}, pantograph:{s:"NORMAL"},
+        hvac:{s:"NORMAL",t:24}, powerRail:{s:"NORMAL"},
         traction:{s:"NORMAL",mT:50}, battery:{s:"NORMAL",v:77.5},
         cctv:{s:"NORMAL",cams:24}, signalling:{s:"NORMAL"} },
     stations,
@@ -122,9 +122,9 @@ function tick(id){
   c.hvac.t=Math.round(c.hvac.t*10)/10;
   if(c.hvac.s==="FAULT") alerts.push({code:"HVAC_FAULT",severity:"MEDIUM",message:`Cabin temp ${c.hvac.t}°C`});
 
-  // pantograph
-  c.pantograph.s=evo(c.pantograph.s);
-  if(c.pantograph.s==="FAULT") alerts.push({code:"PANTO_FAULT",severity:"CRITICAL",message:"Pantograph contact loss"});
+  // power rail (third rail)
+  c.powerRail.s=evo(c.powerRail.s);
+  if(c.powerRail.s==="FAULT") alerts.push({code:"POWER_FAULT",severity:"CRITICAL",message:"Third rail power loss"});
 
   // traction
   c.traction.s=evo(c.traction.s);
@@ -163,7 +163,7 @@ function tick(id){
       doors:    {state:c.doors.s,    faultCars:c.doors.fc},
       brakes:   {state:c.brakes.s,   pressure:c.brakes.p},
       hvac:     {state:c.hvac.s,     cabinTemp:c.hvac.t},
-      pantograph:{state:c.pantograph.s},
+      powerRail:{state:c.powerRail.s},
       traction: {state:c.traction.s, motorTemp:c.traction.mT},
       battery:  {state:c.battery.s,  voltage:c.battery.v},
       cctv:     {state:c.cctv.s,     activeCams:c.cctv.cams},

@@ -6,13 +6,13 @@
 
 ## Concept
 
-BTS Skytrain operates **3 depots** across Bangkok:
+BTS Skytrain operates **3 depots** across Bangkok, managing a fleet of **98 trains**:
 
-| Depot | Code | Line | Trains |
-|-------|------|------|--------|
-| Mo Chit Depot | `MOC` | Sukhumvit (North) | 12 |
-| Bearing Depot | `BEA` | Sukhumvit (South) | 10 |
-| Wutthakat Depot | `WUT` | Silom | 8 |
+| Depot | Code | Line | EMU Series | Trains |
+|-------|------|------|------------|--------|
+| Mo Chit Depot | `MOC` | Sukhumvit | EMU-A1 (Siemens, 1–35) + EMU-B1 (CNR, 36–47) + EMU-B2 (CNR, 48–52) | 52 |
+| Khukhot Depot | `KHU` | Sukhumvit | EMU-A2 (Siemens-Bozankaya, 53–74) | 22 |
+| Kheha Depot | `KHA` | Sukhumvit | EMU-B3 (CRRC, 75–98) | 24 |
 
 Each depot continuously sends **train telemetry** to a central **Control Room** web dashboard. HealthHub simulates this entire pipeline using Docker containers.
 
@@ -53,9 +53,11 @@ Depot Agent  ──MQTT──►  Mosquitto  ──MQTT──►  Backend  ─�
 ### MQTT Topic Structure
 
 ```
-healthhub/depot/{DEPOT_ID}/status          # Depot registration (retained)
-healthhub/depot/{DEPOT_ID}/train/{TRAIN_ID} # Train telemetry (QoS 1)
+healthhub/depot/{DEPOT_ID}/status            # Depot registration (retained)
+healthhub/depot/{DEPOT_ID}/train/{TRAIN_ID}  # Train telemetry (QoS 1)
 ```
+
+Example topic: `healthhub/depot/MOC/train/EMU-A1-001`
 
 ---
 
@@ -65,7 +67,7 @@ Each train publishes a JSON payload every 3 seconds:
 
 ```json
 {
-  "trainId": "MOC-001",
+  "trainId": "EMU-A1-001",
   "depotId": "MOC",
   "depotName": "Mo Chit Depot",
   "line": "Sukhumvit",
@@ -79,7 +81,7 @@ Each train publishes a JSON payload every 3 seconds:
     "doors":      { "state": "NORMAL", "faultCars": [] },
     "brakes":     { "state": "NORMAL", "pressure": 98.2 },
     "hvac":       { "state": "NORMAL", "cabinTemp": 24.1 },
-    "pantograph": { "state": "NORMAL" },
+    "powerRail": { "state": "NORMAL" },
     "traction":   { "state": "WARNING", "motorTemp": 108 },
     "battery":    { "state": "NORMAL", "voltage": 77.3 },
     "cctv":       { "state": "NORMAL", "activeCams": 24 },

@@ -64,7 +64,7 @@ function initTrainState(trainId, line) {
       doors:      { state: "NORMAL", faultCars: [] },
       brakes:     { state: "NORMAL", pressure: 100 },
       hvac:       { state: "NORMAL", cabinTemp: 24 },
-      pantograph: { state: "NORMAL" },
+      powerRail: { state: "NORMAL" },
       traction:   { state: "NORMAL", motorTemp: 50 },
       battery:    { state: "NORMAL", voltage: 77.5 },
       cctv:       { state: "NORMAL", activeCams: 24 },
@@ -166,10 +166,10 @@ function updateTrain(trainId) {
     alerts.push({ code: "HVAC_FAULT", severity: "MEDIUM", message: `Cabin temperature ${c.hvac.cabinTemp}°C` });
   }
 
-  // Pantograph
-  c.pantograph.state = evolveComponentState(c.pantograph.state);
-  if (c.pantograph.state === "FAULT") {
-    alerts.push({ code: "PANTO_FAULT", severity: "CRITICAL", message: "Pantograph contact loss detected" });
+  // Power Rail (Third Rail)
+  c.powerRail.state = evolveComponentState(c.powerRail.state);
+  if (c.powerRail.state === "FAULT") {
+    alerts.push({ code: "POWER_FAULT", severity: "CRITICAL", message: "Third rail power loss detected" });
   }
 
   // Traction
@@ -269,7 +269,7 @@ function getTelemetry(trainId, depotId, depotName, line, series = "", manufactur
       doors:      { ...s.components.doors },
       brakes:     { ...s.components.brakes },
       hvac:       { ...s.components.hvac },
-      pantograph: { ...s.components.pantograph },
+      powerRail: { ...s.components.powerRail },
       traction:   { ...s.components.traction },
       battery:    { ...s.components.battery },
       cctv:       { ...s.components.cctv },
